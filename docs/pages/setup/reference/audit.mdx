@@ -78,22 +78,73 @@ format:
 
 The possible event types are:
 
-| Event Type | Description |
-| - | - |
-| auth | Authentication attempt. Adds the following fields: `{"success": "false", "error": "access denied"}` |
-| session.start | Started an interactive shell session. |
-| session.end | An interactive shell session has ended. |
-| session.join | A new user has joined the existing interactive shell session. |
-| session.leave | A user has left the session. |
-| session.disk | A list of files opened during the session. *Requires Enhanced Session Recording*. |
-| session.network | A list of network connections made during the session.  *Requires Enhanced Session Recording*. |
-| session.command | A list of commands ran during the session.  *Requires Enhanced Session Recording*. |
-| exec | Remote command has been executed via SSH, like `tsh ssh root@node ls /`. The following fields will be logged: `{"command": "ls /", "exitCode": 0, "exitError": ""}` |
-| scp | Remote file copy has been executed. The following fields will be logged: `{"path": "/path/to/file.txt", "len": 32344, "action": "read" }` |
-| resize | Terminal has been resized. |
-| user.login | A user logged into web UI or via tsh. The following fields will be logged: `{"user": "alice@example.com", "method": "local"}` . |
-| app.session.start | A user accessed an application |
-| app.session.chunk | A record of activity during an app session |
+| Event Type                    | Description |
+| ----------------------------- | ----------- |
+| access_request.create         | |
+| access_request.review         | |
+| access_request.update         | |
+| app.create                    | |
+| app.delete                    | |
+| app.session.chunk             | A record of activity during an app session. |
+| app.session.request           | |
+| app.session.start             | A user accessed an application. |
+| app.update                    | |
+| auth                          | Authentication attempt. Adds the following fields: `{"success": "false", "error": "access denied"}` |
+| billing.create_card           | |
+| billing.delete_card           | |
+| billing.update_card           | |
+| billing.update_info           | |
+| client.disconnect             | |
+| db.create                     | |
+| db.delete                     | |
+| db.session.end                | |
+| db.session.query              | |
+| db.session.query.failed       | |
+| db.session.start              | |
+| db.update                     | |
+| exec                          | Remote command has been executed via SSH, like `tsh ssh root@node ls /`. The following fields will be logged: `{"command": "ls /", "exitCode": 0, "exitError": ""}` |
+| github.created                | |
+| github.deleted                | |
+| kube.request                  | |
+| lock.created                  | |
+| lock.deleted                  | |
+| mfa.add                       | |
+| mfa.delete                    | |
+| oidc.created                  | |
+| oidc.deleted                  | |
+| port                          | |
+| privilege_token.create        | |
+| recovery_code.generated       | |
+| recovery_code.used            | |
+| recovery_token.create         | |
+| reset_password_token.create   | |
+| resize                        | Terminal has been resized. |
+| role.created                  | |
+| role.deleted                  | |
+| saml.created                  | |
+| saml.deleted                  | |
+| scp                           | Remote file copy has been executed. The following fields will be logged: `{"path": "/path/to/file.txt", "len": 32344, "action": "read" }` |
+| session.command               | A list of commands ran during the session.  *Requires Enhanced Session Recording*. |
+| session.data                  | |
+| session.disk                  | A list of files opened during the session. *Requires Enhanced Session Recording*. |
+| session.end                   | An interactive shell session has ended.  |
+| session.join                  | A new user has joined the existing interactive shell session. |
+| session.leave                 | A user has left the session. |
+| session.network               | A list of network connections made during the session.  *Requires Enhanced Session Recording*. |
+| session.start                 | Started an interactive shell session. |
+| session.upload                | |
+| session.rejected              | |
+| subsystem                     | |
+| trusted_cluster.create        | |
+| trusted_cluster.delete        | |
+| trusted_cluster_token.create  | |
+| user.create                   | |
+| user.delete                   | |
+| user.login                    | A user logged into web UI or via tsh. The following fields will be logged: `{"user": "alice@example.com", "method": "local"}`. |
+| user.password_change          | |
+| user.update                   | |
+| windows.desktop.session.end   | |
+| windows.desktop.session.start | |
 
 ## Recorded sessions
 
