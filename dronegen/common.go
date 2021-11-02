@@ -74,14 +74,15 @@ var (
 	// TODO(gus): Set this from `make -C build.assets print-runtime-version` or similar rather
 	// than hardcoding it. Also remove the usage of RUNTIME as a pipeline-level environment variable
 	// (as support for these varies among Drone runners) and only set it for steps that need it.
-	goRuntime = value{raw: "go1.16.2"}
+	goRuntime = value{raw: "go1.17.2"}
 )
 
 type buildType struct {
-	os      string
-	arch    string
-	fips    bool
-	centos6 bool
+	os              string
+	arch            string
+	fips            bool
+	centos6         bool
+	windowsUnsigned bool
 }
 
 // dockerService generates a docker:dind service
@@ -115,6 +116,9 @@ func releaseMakefileTarget(b buildType) string {
 	}
 	if b.fips {
 		makefileTarget += "-fips"
+	}
+	if b.os == "windows" && b.windowsUnsigned {
+		makefileTarget = "release-windows-unsigned"
 	}
 	return makefileTarget
 }
