@@ -31,6 +31,11 @@ import (
 )
 
 func (process *TeleportProcess) initDatabases() {
+	if len(process.Config.Databases.Databases) == 0 &&
+		len(process.Config.Databases.ResourceMatchers) == 0 &&
+		len(process.Config.Databases.AWSMatchers) == 0 {
+		return
+	}
 	process.registerWithAuthServer(types.RoleDatabase, DatabasesIdentityEvent)
 	process.RegisterCriticalFunc("db.init", process.initDatabaseService)
 }
@@ -55,21 +60,24 @@ func (process *TeleportProcess) initDatabaseService() (retErr error) {
 	if !ok {
 		return trace.BadParameter("unsupported event payload type %q", event.Payload)
 	}
+	accessPoint, err := process.newLocalCache(conn.Client, cache.ForDatabases, []string{teleport.ComponentDatabase})
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	resp, err := accessPoint.GetClusterNetworkingConfig(process.ExitContext())
+	if err != nil {
+		return trace.Wrap(err)
+	}
 
 	var tunnelAddr string
 	if conn.TunnelProxy() != "" {
 		tunnelAddr = conn.TunnelProxy()
 	} else {
-		if tunnelAddr, ok = process.singleProcessMode(); !ok {
+		if tunnelAddr, ok = process.singleProcessMode(resp.GetProxyListenerMode()); !ok {
 			return trace.BadParameter("failed to find reverse tunnel address, " +
 				"if running in a single-process mode, make sure auth_service, " +
 				"proxy_service, and db_service are all enabled")
 		}
-	}
-
-	accessPoint, err := process.newLocalCache(conn.Client, cache.ForDatabases, []string{teleport.ComponentDatabase})
-	if err != nil {
-		return trace.Wrap(err)
 	}
 
 	// Start uploader that will scan a path on disk and upload completed
@@ -96,6 +104,10 @@ func (process *TeleportProcess) initDatabaseService() (retErr error) {
 					Region: db.AWS.Region,
 					Redshift: types.Redshift{
 						ClusterID: db.AWS.Redshift.ClusterID,
+					},
+					RDS: types.RDS{
+						InstanceID: db.AWS.RDS.InstanceID,
+						ClusterID:  db.AWS.RDS.ClusterID,
 					},
 				},
 				GCP: types.GCPCloudSQL{
@@ -161,13 +173,14 @@ func (process *TeleportProcess) initDatabaseService() (retErr error) {
 			Emitter:  asyncEmitter,
 			Streamer: streamer,
 		},
-		Authorizer:  authorizer,
-		TLSConfig:   tlsConfig,
-		GetRotation: process.getRotation,
-		Hostname:    process.Config.Hostname,
-		HostID:      process.Config.HostUUID,
-		Databases:   databases,
-		Selectors:   process.Config.Databases.Selectors,
+		Authorizer:       authorizer,
+		TLSConfig:        tlsConfig,
+		GetRotation:      process.getRotation,
+		Hostname:         process.Config.Hostname,
+		HostID:           process.Config.HostUUID,
+		Databases:        databases,
+		ResourceMatchers: process.Config.Databases.ResourceMatchers,
+		AWSMatchers:      process.Config.Databases.AWSMatchers,
 		OnHeartbeat: func(err error) {
 			if err != nil {
 				process.BroadcastEvent(Event{Name: TeleportDegradedEvent, Payload: teleport.ComponentDatabase})
@@ -200,6 +213,7 @@ func (process *TeleportProcess) initDatabaseService() (retErr error) {
 			AccessPoint: conn.Client,
 			HostSigner:  conn.ServerIdentity.KeySigner,
 			Cluster:     clusterName,
+			FIPS:        process.Config.FIPS,
 		})
 	if err != nil {
 		return trace.Wrap(err)
@@ -225,6 +239,7 @@ func (process *TeleportProcess) initDatabaseService() (retErr error) {
 		if agentPool != nil {
 			agentPool.Stop()
 		}
+		warnOnErr(conn.Close(), log)
 		log.Info("Exited.")
 	})
 
