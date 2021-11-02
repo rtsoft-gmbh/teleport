@@ -202,6 +202,5 @@ External contributors:
 - PR can't be merged until it has all required approvals.
 - Each review event will trigger the check workflow and the PR will be checked for approvals.
 - A cron job will invalidate stale `Check` workflow runs every 30 minutes.
-- New commits *will* invalidate approvals unless they are committed and verified by Github.
-  - Reviewers will be tagged in a comment on the pull request to rereview upon invalidation.
+- New commits *will* invalidate approvals and reviewers will be tagged in a comment on the pull request to re-review upon invalidation.
 
