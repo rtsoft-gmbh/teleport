@@ -22,7 +22,7 @@ To improve the speed and quality of the current development workflow process.
 
 ### Getting Data 
 
-Pull request metadata will be obtained via the [execution context](https://docs.github.com/en/enterprise-server@3.0/actions/reference/context-and-expression-syntax-for-github-actions). This execution context contains `GITHUB_EVENT_PATH` as an environment variable which is the path to a JSON file with the complete event payload. With this, the pull request metadata will be unmarshaled into a `PullRequestMetadata` struct and will be used to make the necessary API calls. 
+Pull request metadata will be obtained via the a event payload file that is already on the Github actions runner. Github actions sets an environment variable, `GITHUB_EVENT_PATH`, which is the path to that event payload in JSON format. With this, the pull request metadata will be unmarshaled into a `PullRequestMetadata` struct and will be used to make the necessary API calls. 
 
 ```go
   // Example PullRequestMetadata struct
