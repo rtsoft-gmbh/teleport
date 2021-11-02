@@ -64,7 +64,7 @@ jobs:
         uses: actions/setup-go@v2
       # Run "assign-reviewers" subcommand on bot.
       - name: Assigning reviewers 
-        run: go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --default-reviewers=${{ secrets.defaultreviewers }} --reviewers=${{ secrets.reviewers }} assign-reviewers
+        run: go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }}  --reviewers=${{ secrets.reviewers }} assign-reviewers
 
 ```
 
@@ -95,13 +95,13 @@ jobs:
         uses: actions/setup-go@v2
         # Run "check-reviewers" subcommand on bot.
       - name: Checking reviewers
-        run: go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }} --default-reviewers=${{ secrets.defaultreviewers }} --reviewers=${{ secrets.reviewers }} check-reviewers
+        run: go run cmd/bot.go --token=${{ secrets.GITHUB_TOKEN }}  --reviewers=${{ secrets.reviewers }} check-reviewers
 ```
 
 #### Secrets 
 
 To know which reviewers to assign and check for, a hardcoded JSON object will be used as a Github secret. Usernames will be the name of the key and the value will be a list of required reviewers' usernames. 
-A wildcard key will be required to assign reviewers to external contributors PRs. 
+A wildcard key will be required to assign reviewers to external contributor's PRs. 
 
 ```json
     // Example `reviewers` secret
