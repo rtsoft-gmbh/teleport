@@ -167,14 +167,17 @@ The maximum permissions on any given workflow are `pull-requests:write` and `act
 - [Permissions](https://docs.github.com/en/rest/reference/permissions-required-for-github-apps#permission-on-actions) on Actions
 - [Permissions](https://docs.github.com/en/rest/reference/permissions-required-for-github-apps#permission-on-pull-requests) on Pull Requests
 
-Concerning things that could happen: 
-- Delete/edit comments on issues or pull requests. 
-- Update an issue or a pull request.
-- Rerun a workflow.
-- Delete logs of a workflow run.
-- Canceling a run.
+Concerning actions an attacker can perform:  
 
-There are a few concerning things that can happen, but one that particularly stands out is the ability to cancel a run if an external contributor does obtain the token. An attacker could get all approvals on a pull request, trigger a `pull_request_target` event (such as `synchronize` which is a pushed commit to PR), and cancel a run in that commit with malicious code. If only internal contributors/CODEOWNERS have the ability to merge a PR from a fork, the security in place should be enough and this is not much of a concern. 
+| Action     | Scenario/Mitigation  |
+| ----------- | ----------- |
+| Cancels a run     |   An attacker could get all approvals on a pull request, trigger a `pull_request_target` event (such as `synchronize` which is a pushed commit to PR), and cancel a run in that commit with malicious code. If only internal contributors/CODEOWNERS have the ability to merge a PR from a fork, the security in place should be enough.     |
+| Delete/edit comments on issues or pull requests.   | An attacker could edit or delete important comments. There doesn't seem to be a way to get a malicious commit in master this way.  |
+| Delete logs of a workflow. | An attacker could delete a logs of a workflow that would otherwise fail in their favor. This alone wouldn't be enough to get a malicious commit in for external contributors if the internal contributor that merges their pull request in checks that `Assign` and `Check` workflows pass. Because we do not invalidate reviews for internal contributors when a new commit is pushed and they have the ability to merge their own pull request in, it could be possible to get a malicious commit in. |
+| Re-run a workflow.  | An attacker could re-run a workflow though there wouldn't be any benefit to them even if code was changes. Workflow would just run against the new code and pass/fail accordingly. | 
+| Update an issue or a pull request. | An attacker could update the contents of a pull request or issue.  There doesn't seem to be a way to get a malicious commit in master this way.| 
+
+
 
 #### Github Contexts 
 
