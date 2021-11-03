@@ -51,6 +51,19 @@ on:
   # Types of events the workflows will trigger on
   pull_request_target:
     types: [assigned, opened, reopened, ready_for_review]
+
+permissions:  
+    pull-requests: write
+    actions: none
+    checks: none
+    contents: none
+    deployments: none
+    issues: none
+    packages: none
+    repository-projects: none
+    security-events: none
+    statuses: none
+
 jobs:
   auto-request-review:
     name: Auto Request Review
@@ -81,6 +94,18 @@ on:
     type: [submitted, edited, dismissed]
   pull_request_target: 
     types: [assigned, opened, reopened, ready_for_review, synchronize]
+
+permissions:  
+    actions: write
+    pull-requests: write
+    checks: none
+    contents: none
+    deployments: none
+    issues: none
+    packages: none
+    repository-projects: none
+    security-events: none
+    statuses: none
 
 jobs: 
   check-reviews:
@@ -121,7 +146,19 @@ This workflow dismisses stale workflow runs every 30 minutes for every open pull
   name: Dismiss Stale Workflows Runs
 on:
   schedule:
-    - cron:  '0,30 * * * *' 
+    - cron:  '0,30 * * * *'
+     
+permissions: 
+  actions: write 
+  pull-requests: read
+  checks: none
+  contents: none
+  deployments: none
+  issues: none
+  packages: none
+  repository-projects: none
+  security-events: none
+  statuses: none
 
 jobs: 
   dismiss-stale-runs:
