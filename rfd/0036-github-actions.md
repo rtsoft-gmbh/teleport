@@ -210,9 +210,9 @@ Concerning actions an attacker can perform:
 | ----------- | ----------- |
 | Cancels a run     |   An attacker could get all approvals on a pull request, trigger a `pull_request_target` event (such as `synchronize` which is a pushed commit to PR), and cancel a run in that commit with malicious code. If only internal contributors/CODEOWNERS have the ability to merge a PR from a fork, the security in place should be enough.     |
 | Delete/edit comments on issues or pull requests.   | An attacker could edit or delete important comments. There doesn't seem to be a way to get a malicious commit in master this way.  |
-| Delete logs of a workflow. | An attacker could delete a logs of a workflow that would otherwise fail in their favor. This alone wouldn't be enough to get a malicious commit in for external contributors if the internal contributor that merges their pull request in checks that `Assign` and `Check` workflows pass. Because we do not invalidate reviews for internal contributors when a new commit is pushed and they have the ability to merge their own pull request in, it could be possible to get a malicious commit in. |
+| Delete logs of a workflow. | An attacker could delete a logs of a workflow run. The metadata for the run will still persist, including the status check. There doesn't seem to be a way to get a malicious commit in master this way. |
 | Re-run a workflow.  | An attacker could re-run a workflow though there wouldn't be any benefit to them even if code was changes. Workflow would just run against the new code and pass/fail accordingly. | 
-| Update an issue or a pull request. | An attacker could update the contents of a pull request or issue.  There doesn't seem to be a way to get a malicious commit in master this way.| 
+| Update an issue or a pull request. | An attacker could update the contents of a pull request or issue.  There doesn't seem to be a way to get a malicious commit in master this way. NOTE: Changing the contents of a pull request does mean an attacker could push a commit to a pull request, hence changing the overall code (the token would need `contents:write`). Changing the contents of a pull request include, editing the title, description, or comments| 
 
 
 
