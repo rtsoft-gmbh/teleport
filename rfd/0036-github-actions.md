@@ -42,7 +42,7 @@ type PullRequestMetadata struct {
 ### Workflows
 ### Assigning Reviewers 
 
-Reviewers will be assigned when a pull request is opened, ready for review, or reopened. 
+Reviewers will be assigned when a pull request is opened, marked ready for review, or reopened. 
 
 ```yaml
 # Example workflow configuration 
