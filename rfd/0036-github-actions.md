@@ -212,7 +212,7 @@ Concerning actions an attacker can perform:
 | Delete/edit comments on issues or pull requests.   | An attacker could edit or delete important comments. There doesn't seem to be a way to get a malicious commit in master this way.  |
 | Delete logs of a workflow. | An attacker could delete a logs of a workflow run. The metadata for the run will still persist, including the status check. There doesn't seem to be a way to get a malicious commit in master this way. |
 | Re-run a workflow.  | An attacker could re-run a workflow though there wouldn't be any benefit to them even if code was changes. Workflow would just run against the new code and pass/fail accordingly. | 
-| Update an issue or a pull request. | An attacker could update the contents of a pull request or issue.  There doesn't seem to be a way to get a malicious commit in master this way. NOTE: Changing the contents of a pull request does mean an attacker could push a commit to a pull request, hence changing the overall code (the token would need `contents:write`). Changing the contents of a pull request include, editing the title, description, or comments| 
+| Update an issue or a pull request. | An attacker could update the contents of a pull request or issue.  There doesn't seem to be a way to get a malicious commit in master this way. NOTE: Changing the contents of a pull request does not mean an attacker could push a commit to a pull request, hence changing the overall code (the token would need `contents:write`). Changing the contents of a pull request include, editing the title, description, or comments| 
 
 
 
