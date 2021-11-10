@@ -52,7 +52,7 @@ type session struct {
 // newSession creates a new session.
 func (s *Server) newSession(ctx context.Context, identity *tlsca.Identity, app types.Application) (*session, error) {
 	// Create the stream writer that will write this chunk to the audit log.
-	streamWriter, err := s.newStreamWriter(identity)
+	streamWriter, err := s.newStreamWriter(identity, app)
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -82,6 +82,7 @@ func (s *Server) newSession(ctx context.Context, identity *tlsca.Identity, app t
 			traits:             identity.Traits,
 			log:                s.log,
 			user:               identity.Username,
+			name:               app.GetName(),
 		})
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -105,7 +106,7 @@ func (s *Server) newSession(ctx context.Context, identity *tlsca.Identity, app t
 
 // newStreamWriter creates a streamer that will be used to stream the
 // requests that occur within this session to the audit log.
-func (s *Server) newStreamWriter(identity *tlsca.Identity) (events.StreamWriter, error) {
+func (s *Server) newStreamWriter(identity *tlsca.Identity, app types.Application) (events.StreamWriter, error) {
 	recConfig, err := s.c.AccessPoint.GetSessionRecordingConfig(s.closeContext)
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -161,6 +162,10 @@ func (s *Server) newStreamWriter(identity *tlsca.Identity) (events.StreamWriter,
 		UserMetadata: apievents.UserMetadata{
 			User:         identity.Username,
 			Impersonator: identity.Impersonator,
+		},
+		AppMetadata: apievents.AppMetadata{
+			AppPublicAddr: app.GetPublicAddr(),
+			AppName:       app.GetName(),
 		},
 		SessionChunkID: chunkID,
 	}

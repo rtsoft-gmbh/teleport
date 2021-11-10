@@ -54,6 +54,7 @@ type transportConfig struct {
 	traits             wrappers.Traits
 	log                logrus.FieldLogger
 	user               string
+	name               string
 }
 
 // Check validates configuration.
@@ -289,6 +290,10 @@ func (t *transport) emitAuditEvent(req *http.Request, resp *http.Response) error
 		Path:       req.URL.Path,
 		RawQuery:   req.URL.RawQuery,
 		StatusCode: uint32(resp.StatusCode),
+		AppMetadata: apievents.AppMetadata{
+			AppPublicAddr: t.c.uri,
+			AppName:       t.c.name,
+		},
 	}
 	if err := t.c.w.EmitAuditEvent(t.closeContext, appSessionRequestEvent); err != nil {
 		return trace.Wrap(err)

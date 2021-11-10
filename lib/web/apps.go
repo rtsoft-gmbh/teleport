@@ -213,6 +213,10 @@ func (h *Handler) createAppSession(w http.ResponseWriter, r *http.Request, p htt
 			RemoteAddr: r.RemoteAddr,
 		},
 		PublicAddr: identity.RouteToApp.PublicAddr,
+		AppMetadata: apievents.AppMetadata{
+			AppPublicAddr: result.PublicAddr,
+			AppName:       result.AppName,
+		},
 	}
 	if err := h.cfg.Emitter.EmitAuditEvent(h.cfg.Context, appSessionStartEvent); err != nil {
 		return nil, trace.Wrap(err)
@@ -254,6 +258,8 @@ type resolveAppResult struct {
 	// ClusterName is the name of the cluster within which the application
 	// is running.
 	ClusterName string
+	// AppName is the configured application name.
+	AppName string
 }
 
 func (h *Handler) resolveApp(ctx context.Context, clt app.Getter, proxy reversetunnel.Tunnel, params resolveAppParams) (*resolveAppResult, error) {
@@ -285,6 +291,7 @@ func (h *Handler) resolveApp(ctx context.Context, clt app.Getter, proxy reverset
 		FQDN:        fqdn,
 		PublicAddr:  server.GetApp().GetPublicAddr(),
 		ClusterName: appClusterName,
+		AppName:     server.GetApp().GetName(),
 	}, nil
 }
 
