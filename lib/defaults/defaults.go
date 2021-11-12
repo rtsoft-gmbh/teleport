@@ -381,6 +381,9 @@ var (
 
 	// AsyncBufferSize is a default buffer size for async emitters
 	AsyncBufferSize = 1024
+
+	// MaxRetryAttempts is a maximum connection attempts to the auth service
+	MaxRetryAttempts = 10
 )
 
 // Default connection limits, they can be applied separately on any of the Teleport
