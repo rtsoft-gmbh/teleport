@@ -289,6 +289,7 @@ func (t *transport) emitAuditEvent(req *http.Request, resp *http.Response) error
 		RawQuery:   req.URL.RawQuery,
 		StatusCode: uint32(resp.StatusCode),
 		AppMetadata: apievents.AppMetadata{
+			AppURI:        t.c.app.GetURI(),
 			AppPublicAddr: t.c.app.GetPublicAddr(),
 			AppName:       t.c.app.GetName(),
 		},

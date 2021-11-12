@@ -162,6 +162,7 @@ func (s *Server) newStreamWriter(identity *tlsca.Identity, app types.Application
 			Impersonator: identity.Impersonator,
 		},
 		AppMetadata: apievents.AppMetadata{
+			AppURI:        app.GetURI(),
 			AppPublicAddr: app.GetPublicAddr(),
 			AppName:       app.GetName(),
 		},

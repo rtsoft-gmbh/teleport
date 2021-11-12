@@ -454,6 +454,7 @@ func TestRequestAuditEvents(t *testing.T) {
 				requestEventsReceived.Inc()
 				requestEvent, ok := event.(*apievents.AppSessionRequest)
 				require.True(t, ok)
+				require.Equal(t, app.Spec.URI, requestEvent.AppURI)
 				require.Equal(t, app.Spec.PublicAddr, requestEvent.AppPublicAddr)
 				require.Equal(t, app.Metadata.Name, requestEvent.AppName)
 			}
@@ -465,7 +466,7 @@ func TestRequestAuditEvents(t *testing.T) {
 
 	s := SetUpSuiteWithConfig(t, suiteConfig{
 		ServerStreamer: serverStreamer,
-		Apps: types.Apps{app},
+		Apps:           types.Apps{app},
 	})
 	// make a request to generate events.
 	s.checkHTTPResponse(t, s.clientCertificate, func(_ *http.Response) {
@@ -475,6 +476,7 @@ func TestRequestAuditEvents(t *testing.T) {
 
 		chunkEvent, ok := events[0].(*apievents.AppSessionChunk)
 		require.True(t, ok)
+		require.Equal(t, app.Spec.URI, chunkEvent.AppURI)
 		require.Equal(t, app.Spec.PublicAddr, chunkEvent.AppPublicAddr)
 		require.Equal(t, app.Metadata.Name, chunkEvent.AppName)
 
