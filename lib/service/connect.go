@@ -47,7 +47,8 @@ import (
 // service until succeeds or process gets shut down
 func (process *TeleportProcess) reconnectToAuthService(role types.SystemRole) (*Connector, error) {
 	retryTime := defaults.HighResPollingPeriod
-	for {
+	maxRetryAttempts := defaults.MaxRetryAttempts
+	for retryAttempt := 0; retryAttempt != maxRetryAttempts; retryAttempt++ {
 		connector, err := process.connectToAuthService(role)
 		if err == nil {
 			// if connected and client is present, make sure the connector's
@@ -75,6 +76,8 @@ func (process *TeleportProcess) reconnectToAuthService(role types.SystemRole) (*
 			return nil, ErrTeleportExited
 		}
 	}
+	process.log.Infof("%v exceeded the limit of connection attempts, teleport is shutting down.", role)
+	return nil, ErrTeleportExited
 }
 
 // connectToAuthService attempts to login into the auth servers specified in the
