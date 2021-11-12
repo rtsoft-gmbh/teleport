@@ -428,6 +428,9 @@ var (
 	// restart if there has been more than `MaxConnectionErrorsBeforeRestart`
 	// errors in the preceding `ConnectionErrorMeasurementPeriod`
 	MaxConnectionErrorsBeforeRestart = 5
+
+	// MaxRetryAttempts is a maximum connection attempts to the auth service
+	MaxRetryAttempts = 10
 )
 
 // Default connection limits, they can be applied separately on any of the Teleport
