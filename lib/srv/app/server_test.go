@@ -38,10 +38,13 @@ import (
 	"github.com/gravitational/teleport/api/constants"
 	"github.com/gravitational/teleport/api/defaults"
 	"github.com/gravitational/teleport/api/types"
+	apievents "github.com/gravitational/teleport/api/types/events"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/services"
+	libsession "github.com/gravitational/teleport/lib/session"
 	"github.com/gravitational/teleport/lib/utils"
+	"go.uber.org/atomic"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -102,6 +105,8 @@ type suiteConfig struct {
 	OnReconcile func(types.Apps)
 	// Apps are the apps to configure.
 	Apps types.Apps
+	// ServerStreamer is the auth server audit events streamer.
+	ServerStreamer events.Streamer
 }
 
 func SetUpSuite(t *testing.T) *Suite {
@@ -121,8 +126,17 @@ func SetUpSuiteWithConfig(t *testing.T, config suiteConfig) *Suite {
 		ClusterName: "root.example.com",
 		Dir:         s.dataDir,
 		Clock:       s.clock,
+		Streamer:    config.ServerStreamer,
 	})
 	require.NoError(t, err)
+
+	if config.ServerStreamer != nil {
+		err = s.authServer.AuthServer.SetSessionRecordingConfig(s.closeContext, &types.SessionRecordingConfigV2{
+			Spec: types.SessionRecordingConfigSpecV2{Mode: types.RecordAtNodeSync},
+		})
+		require.NoError(t, err)
+	}
+
 	s.tlsServer, err = s.authServer.NewTestTLSServer()
 	require.NoError(t, err)
 
@@ -408,6 +422,63 @@ func TestAWSConsoleRedirect(t *testing.T) {
 		location, err := resp.Location()
 		require.NoError(t, err)
 		require.Equal(t, location.String(), "https://signin.aws.amazon.com")
+	})
+}
+
+// TestRequestAuditEvent verifies that audit events regarding application access
+// are being generated with the correct metadata.
+// This test configures the server to record the session sync, meaning that the
+// events will be forwarded to the auth server. On the server-side, it defines a
+// CallbackStreamer, which is going to be used to "intercept" the
+// app.session.request events.
+func TestRequestAuditEvents(t *testing.T) {
+	testhttp := httptest.NewUnstartedServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	testhttp.Config.TLSConfig = &tls.Config{Time: clockwork.NewFakeClock().Now}
+	testhttp.Start()
+
+	app, err := types.NewAppV3(types.Metadata{
+		Name:   "foo",
+		Labels: staticLabels,
+	}, types.AppSpecV3{
+		URI:           testhttp.URL,
+		PublicAddr:    "foo.example.com",
+		DynamicLabels: types.LabelsToV2(dynamicLabels),
+	})
+	require.NoError(t, err)
+
+	requestEventsReceived := atomic.NewUint64(0)
+	serverStreamer, err := events.NewCallbackStreamer(events.CallbackStreamerConfig{
+		Inner: events.NewDiscardEmitter(),
+		OnEmitAuditEvent: func(_ context.Context, _ libsession.ID, event apievents.AuditEvent) error {
+			if event.GetType() == events.AppSessionRequestEvent {
+				requestEventsReceived.Inc()
+				requestEvent, ok := event.(*apievents.AppSessionRequest)
+				require.True(t, ok)
+				require.Equal(t, app.Spec.PublicAddr, requestEvent.AppPublicAddr)
+				require.Equal(t, app.Metadata.Name, requestEvent.AppName)
+			}
+
+			return nil
+		},
+	})
+	require.NoError(t, err)
+
+	s := SetUpSuiteWithConfig(t, suiteConfig{
+		ServerStreamer: serverStreamer,
+		Apps: types.Apps{app},
+	})
+	// make a request to generate events.
+	s.checkHTTPResponse(t, s.clientCertificate, func(_ *http.Response) {
+		events, _, err := s.authServer.AuditLog.SearchEvents(time.Time{}, time.Now().Add(time.Minute), "", []string{events.AppSessionChunkEvent}, 10, types.EventOrderDescending, "")
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+
+		chunkEvent, ok := events[0].(*apievents.AppSessionChunk)
+		require.True(t, ok)
+		require.Equal(t, app.Spec.PublicAddr, chunkEvent.AppPublicAddr)
+		require.Equal(t, app.Metadata.Name, chunkEvent.AppName)
+
+		require.Equal(t, 1, int(requestEventsReceived.Load()))
 	})
 }
 

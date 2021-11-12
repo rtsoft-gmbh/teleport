@@ -43,8 +43,7 @@ import (
 
 // transportConfig is configuration for a rewriting transport.
 type transportConfig struct {
-	uri                string
-	publicAddr         string
+	app                types.Application
 	publicPort         string
 	insecureSkipVerify bool
 	cipherSuites       []uint16
@@ -54,7 +53,6 @@ type transportConfig struct {
 	traits             wrappers.Traits
 	log                logrus.FieldLogger
 	user               string
-	name               string
 }
 
 // Check validates configuration.
@@ -62,10 +60,10 @@ func (c *transportConfig) Check() error {
 	if c.w == nil {
 		return trace.BadParameter("stream writer missing")
 	}
-	if c.uri == "" {
+	if c.app.GetURI() == "" {
 		return trace.BadParameter("uri missing")
 	}
-	if c.publicAddr == "" {
+	if c.app.GetPublicAddr() == "" {
 		return trace.BadParameter("public addr missing")
 	}
 	if c.publicPort == "" {
@@ -102,7 +100,7 @@ func newTransport(ctx context.Context, c *transportConfig) (*transport, error) {
 	}
 
 	// Parse the target address once then inject it into all requests.
-	uri, err := url.Parse(c.uri)
+	uri, err := url.Parse(c.app.GetURI())
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
@@ -240,7 +238,7 @@ func (t *transport) needsPathRedirect(r *http.Request) (string, bool) {
 
 	u := url.URL{
 		Scheme: "https",
-		Host:   net.JoinHostPort(t.c.publicAddr, t.c.publicPort),
+		Host:   net.JoinHostPort(t.c.app.GetPublicAddr(), t.c.publicPort),
 		Path:   uriPath,
 	}
 	return u.String(), true
@@ -272,7 +270,7 @@ func (t *transport) rewriteRedirect(resp *http.Response) error {
 		// redirects, rewrite the header.
 		if apiutils.SliceContainsStr(t.c.rewrite.Redirect, host(u.Host)) {
 			u.Scheme = "https"
-			u.Host = net.JoinHostPort(t.c.publicAddr, t.c.publicPort)
+			u.Host = net.JoinHostPort(t.c.app.GetPublicAddr(), t.c.publicPort)
 		}
 		resp.Header.Set("Location", u.String())
 	}
@@ -291,8 +289,8 @@ func (t *transport) emitAuditEvent(req *http.Request, resp *http.Response) error
 		RawQuery:   req.URL.RawQuery,
 		StatusCode: uint32(resp.StatusCode),
 		AppMetadata: apievents.AppMetadata{
-			AppPublicAddr: t.c.uri,
-			AppName:       t.c.name,
+			AppPublicAddr: t.c.app.GetPublicAddr(),
+			AppName:       t.c.app.GetName(),
 		},
 	}
 	if err := t.c.w.EmitAuditEvent(t.closeContext, appSessionRequestEvent); err != nil {

@@ -72,8 +72,7 @@ func (s *Server) newSession(ctx context.Context, identity *tlsca.Identity, app t
 	transport, err := newTransport(s.closeContext,
 		&transportConfig{
 			w:                  streamWriter,
-			uri:                app.GetURI(),
-			publicAddr:         app.GetPublicAddr(),
+			app:                app,
 			publicPort:         s.proxyPort,
 			cipherSuites:       s.c.CipherSuites,
 			insecureSkipVerify: app.GetInsecureSkipVerify(),
@@ -82,7 +81,6 @@ func (s *Server) newSession(ctx context.Context, identity *tlsca.Identity, app t
 			traits:             identity.Traits,
 			log:                s.log,
 			user:               identity.Username,
-			name:               app.GetName(),
 		})
 	if err != nil {
 		return nil, trace.Wrap(err)
