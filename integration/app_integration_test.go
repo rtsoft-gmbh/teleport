@@ -35,12 +35,15 @@ import (
 	"time"
 
 	"github.com/gravitational/teleport"
+	apidefaults "github.com/gravitational/teleport/api/defaults"
 	"github.com/gravitational/teleport/api/types"
+	apievents "github.com/gravitational/teleport/api/types/events"
 	"github.com/gravitational/teleport/lib"
 	"github.com/gravitational/teleport/lib/auth"
 	"github.com/gravitational/teleport/lib/auth/testauthority"
 	"github.com/gravitational/teleport/lib/client"
 	"github.com/gravitational/teleport/lib/defaults"
+	"github.com/gravitational/teleport/lib/events"
 	"github.com/gravitational/teleport/lib/httplib/csrf"
 	"github.com/gravitational/teleport/lib/jwt"
 	"github.com/gravitational/teleport/lib/service"
@@ -71,13 +74,13 @@ func TestAppAccessForward(t *testing.T) {
 	}{
 		{
 			desc:          "root cluster, valid application session cookie, success",
-			inCookie:      pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName),
+			inCookie:      pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName, pack.rootAppName, pack.rootAppURI),
 			outStatusCode: http.StatusOK,
 			outMessage:    pack.rootMessage,
 		},
 		{
 			desc:          "leaf cluster, valid application session cookie, success",
-			inCookie:      pack.createAppSession(t, pack.leafAppPublicAddr, pack.leafAppClusterName),
+			inCookie:      pack.createAppSession(t, pack.leafAppPublicAddr, pack.leafAppClusterName, pack.leafAppName, pack.leafAppURI),
 			outStatusCode: http.StatusOK,
 			outMessage:    pack.leafMessage,
 		},
@@ -112,22 +115,22 @@ func TestAppAccessWebsockets(t *testing.T) {
 	}{
 		{
 			desc:       "root cluster, valid application session cookie, successful websocket (ws://) request",
-			inCookie:   pack.createAppSession(t, pack.rootWSPublicAddr, pack.rootAppClusterName),
+			inCookie:   pack.createAppSession(t, pack.rootWSPublicAddr, pack.rootAppClusterName, pack.rootWSAppName, pack.rootWSAppURI),
 			outMessage: pack.rootWSMessage,
 		},
 		{
 			desc:       "root cluster, valid application session cookie, successful secure websocket (wss://) request",
-			inCookie:   pack.createAppSession(t, pack.rootWSSPublicAddr, pack.rootAppClusterName),
+			inCookie:   pack.createAppSession(t, pack.rootWSSPublicAddr, pack.rootAppClusterName, pack.rootWSSAppName, pack.rootWSSAppURI),
 			outMessage: pack.rootWSSMessage,
 		},
 		{
 			desc:       "leaf cluster, valid application session cookie, successful websocket (ws://) request",
-			inCookie:   pack.createAppSession(t, pack.leafWSPublicAddr, pack.leafAppClusterName),
+			inCookie:   pack.createAppSession(t, pack.leafWSPublicAddr, pack.leafAppClusterName, pack.leafWSAppName, pack.leafWSAppURI),
 			outMessage: pack.leafWSMessage,
 		},
 		{
 			desc:       "leaf cluster, valid application session cookie, successful secure websocket (wss://) request",
-			inCookie:   pack.createAppSession(t, pack.leafWSSPublicAddr, pack.leafAppClusterName),
+			inCookie:   pack.createAppSession(t, pack.leafWSSPublicAddr, pack.leafAppClusterName, pack.leafWSSAppName, pack.leafWSSAppURI),
 			outMessage: pack.leafWSSMessage,
 		},
 		{
@@ -198,7 +201,7 @@ func TestAppAccessFlush(t *testing.T) {
 	req, err := http.NewRequest("GET", pack.assembleRootProxyURL("/"), nil)
 	require.NoError(t, err)
 
-	cookie := pack.createAppSession(t, pack.flushAppPublicAddr, pack.flushAppClusterName)
+	cookie := pack.createAppSession(t, pack.flushAppPublicAddr, pack.flushAppClusterName, pack.flushAppName, pack.flushAppURI)
 	req.AddCookie(&http.Cookie{
 		Name:  app.CookieName,
 		Value: cookie,
@@ -255,13 +258,13 @@ func TestAppAccessForwardModes(t *testing.T) {
 	}{
 		{
 			desc:          "root cluster, valid application session cookie, success",
-			inCookie:      pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName),
+			inCookie:      pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName, pack.rootAppName, pack.rootAppURI),
 			outStatusCode: http.StatusOK,
 			outMessage:    pack.rootMessage,
 		},
 		{
 			desc:          "leaf cluster, valid application session cookie, success",
-			inCookie:      pack.createAppSession(t, pack.leafAppPublicAddr, pack.leafAppClusterName),
+			inCookie:      pack.createAppSession(t, pack.leafAppPublicAddr, pack.leafAppClusterName, pack.leafAppName, pack.leafAppURI),
 			outStatusCode: http.StatusOK,
 			outMessage:    pack.leafMessage,
 		},
@@ -283,7 +286,7 @@ func TestAppAccessLogout(t *testing.T) {
 	pack := setup(t)
 
 	// Create an application session.
-	appCookie := pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName)
+	appCookie := pack.createAppSession(t, pack.rootAppPublicAddr, pack.rootAppClusterName, pack.rootAppName, pack.rootAppURI)
 
 	// Log user out of session.
 	status, _, err := pack.makeRequest(appCookie, http.MethodGet, "/teleport-logout")
@@ -303,7 +306,7 @@ func TestAppAccessJWT(t *testing.T) {
 	pack := setup(t)
 
 	// Create an application session.
-	appCookie := pack.createAppSession(t, pack.jwtAppPublicAddr, pack.jwtAppClusterName)
+	appCookie := pack.createAppSession(t, pack.jwtAppPublicAddr, pack.jwtAppClusterName, pack.jwtAppName, pack.jwtAppURI)
 
 	// Get JWT.
 	status, token, err := pack.makeRequest(appCookie, http.MethodGet, "/")
@@ -345,7 +348,7 @@ func TestAppAccessNoHeaderOverrides(t *testing.T) {
 	pack := setup(t)
 
 	// Create an application session.
-	appCookie := pack.createAppSession(t, pack.headerAppPublicAddr, pack.headerAppClusterName)
+	appCookie := pack.createAppSession(t, pack.headerAppPublicAddr, pack.headerAppClusterName, pack.headerAppName, pack.headerAppURI)
 
 	// Get HTTP headers forwarded to the application.
 	status, origHeaderResp, err := pack.makeRequest(appCookie, http.MethodGet, "/")
@@ -450,7 +453,7 @@ func TestAppAccessRewriteHeadersRoot(t *testing.T) {
 	})
 
 	// Create an application session for dumper app in root cluster.
-	appCookie := pack.createAppSession(t, publicAddr, "example.com")
+	appCookie := pack.createAppSession(t, publicAddr, "example.com", "dumper-root", dumperServer.URL)
 
 	// Get headers response and make sure headers were passed.
 	status, resp, err := pack.makeRequest(appCookie, http.MethodGet, "/", service.Header{
@@ -549,7 +552,7 @@ func TestAppAccessRewriteHeadersLeaf(t *testing.T) {
 	})
 
 	// Create an application session for dumper app in leaf cluster.
-	appCookie := pack.createAppSession(t, publicAddr, "leaf.example.com")
+	appCookie := pack.createAppSession(t, publicAddr, "leaf.example.com", "dumper-leaf", dumperServer.URL)
 
 	// Get headers response and make sure headers were passed.
 	status, resp, err := pack.makeRequest(appCookie, http.MethodGet, "/", service.Header{
@@ -592,14 +595,17 @@ type pack struct {
 	rootAppPublicAddr  string
 	rootAppClusterName string
 	rootMessage        string
+	rootAppURI         string
 
 	rootWSAppName    string
 	rootWSPublicAddr string
 	rootWSMessage    string
+	rootWSAppURI     string
 
 	rootWSSAppName    string
 	rootWSSPublicAddr string
 	rootWSSMessage    string
+	rootWSSAppURI     string
 
 	jwtAppName        string
 	jwtAppPublicAddr  string
@@ -613,22 +619,27 @@ type pack struct {
 	leafAppPublicAddr  string
 	leafAppClusterName string
 	leafMessage        string
+	leafAppURI         string
 
 	leafWSAppName    string
 	leafWSPublicAddr string
 	leafWSMessage    string
+	leafWSAppURI     string
 
 	leafWSSAppName    string
 	leafWSSPublicAddr string
 	leafWSSMessage    string
+	leafWSSAppURI     string
 
 	headerAppName        string
 	headerAppPublicAddr  string
 	headerAppClusterName string
+	headerAppURI         string
 
 	flushAppName        string
 	flushAppPublicAddr  string
 	flushAppClusterName string
+	flushAppURI         string
 }
 
 type appTestOptions struct {
@@ -764,7 +775,15 @@ func setupWithOptions(t *testing.T, opts appTestOptions) *pack {
 	}))
 	t.Cleanup(flushServer.Close)
 
+	p.rootAppURI = rootServer.URL
+	p.rootWSAppURI = rootWSServer.URL
+	p.rootWSSAppURI = rootWSSServer.URL
+	p.leafAppURI = leafServer.URL
+	p.leafWSAppURI = leafWSServer.URL
+	p.leafWSSAppURI = leafWSSServer.URL
 	p.jwtAppURI = jwtServer.URL
+	p.headerAppURI = headerServer.URL
+	p.flushAppURI = flushServer.URL
 
 	privateKey, publicKey, err := testauthority.New().GenerateKeyPair("")
 	require.NoError(t, err)
@@ -1051,7 +1070,7 @@ func (p *pack) initTeleportClient(t *testing.T) {
 
 // createAppSession creates an application session with the root cluster. The
 // application that the user connects to may be running in a leaf cluster.
-func (p *pack) createAppSession(t *testing.T, publicAddr, clusterName string) string {
+func (p *pack) createAppSession(t *testing.T, publicAddr, clusterName, name, uri string) string {
 	require.NotEmpty(t, p.webCookie)
 	require.NotEmpty(t, p.webToken)
 
@@ -1092,6 +1111,29 @@ func (p *pack) createAppSession(t *testing.T, publicAddr, clusterName string) st
 	err = json.NewDecoder(resp.Body).Decode(&casResp)
 	require.NoError(t, err)
 
+	require.Eventually(t, func() bool {
+		events, _, err := p.rootCluster.Process.GetAuthServer().SearchEvents(
+			time.Now().Add(-time.Hour),
+			time.Now().Add(time.Hour),
+			apidefaults.Namespace,
+			[]string{events.AppSessionStartEvent},
+			1,
+			types.EventOrderDescending,
+			"",
+		)
+		require.NoError(t, err)
+		if len(events) == 0 {
+			return false
+		}
+
+		startSessionEvent, ok := events[0].(*apievents.AppSessionStart)
+		require.True(t, ok)
+		require.Equal(t, uri, startSessionEvent.AppURI)
+		require.Equal(t, publicAddr, startSessionEvent.AppPublicAddr)
+		require.Equal(t, name, startSessionEvent.AppName)
+
+		return true
+	}, 500*time.Millisecond, 50*time.Millisecond)
 	return casResp.CookieValue
 }
 
