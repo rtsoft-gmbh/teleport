@@ -75,5 +75,5 @@ data:
     {{- end }}
   {{- end }}
     ssh_service:
-      enabled: false
+      enabled: true
 {{- end -}}
