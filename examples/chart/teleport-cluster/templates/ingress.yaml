@@ -1,0 +1,39 @@
+{{- $domain:= (required "clusterName is required in chartValues when certManager is enabled" .Values.clusterName) }}
+{{- $domainWildcard := printf "*.%s" (required "clusterName is required in chartValues when certManager is enabled" .Values.clusterName) }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+{{ toYaml .Values.rtsoft.ingress.annotations | indent 4 }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  ingressClassName: {{ .Values.rtsoft.ingress.ingressClassName }}
+  rules:
+  - host: {{ quote $domain }}
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: {{ .Release.Name }}
+            port:
+              name: https
+  - host: {{ quote $domainWildcard }}
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        backend:
+          service:
+            name: {{ .Release.Name }}
+            port:
+              name: https
+{{- if .Values.highAvailability.certManager.enabled }}
+  tls:
+  - hosts:
+    - {{ quote $domain }}
+    - {{ quote $domainWildcard }}
+    secretName: teleport-tls
+{{- end }}
