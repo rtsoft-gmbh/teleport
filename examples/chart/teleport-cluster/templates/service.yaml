@@ -17,7 +17,7 @@ metadata:
     {{- end }}
   {{- end }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.rtsoft.service.type }}
   ports:
   - name: https
     port: 443
