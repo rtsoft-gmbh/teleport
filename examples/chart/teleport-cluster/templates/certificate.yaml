@@ -14,4 +14,5 @@ spec:
   issuerRef:
     name: {{ required "highAvailability.certManager.issuerName is required in chart values" .Values.highAvailability.certManager.issuerName }}
     kind: {{ required "highAvailability.certManager.issuerKind is required in chart values" .Values.highAvailability.certManager.issuerKind }}
+    group: {{ required "highAvailability.certManager.issuerGroup is required in chart values" .Values.highAvailability.certManager.issuerGroup }}
 {{- end }}
