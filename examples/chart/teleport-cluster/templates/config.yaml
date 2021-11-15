@@ -55,6 +55,7 @@ data:
   {{- end }}
       authentication:
         type: {{ required "authenticationType is required in chart values" .Values.authenticationType }}
+        second_factor: 'off'
   {{- if eq .Values.proxyListenerMode "multiplex" }}
       proxy_listener_mode: multiplex
   {{- end }}
