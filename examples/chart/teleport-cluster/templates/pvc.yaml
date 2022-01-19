@@ -7,6 +7,7 @@ metadata:
   labels:
     app: {{ .Release.Name }}
 spec:
+  storageClassName: {{ .Values.rtsoft.storageClassName }}
   accessModes:
   - ReadWriteOnce
   resources:
